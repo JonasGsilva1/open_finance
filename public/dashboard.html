@@ -344,7 +344,7 @@
             <p><strong>Score:</strong>
             ${dados.score}</p>
             <p><strong>Taxa:</strong>
-            ${dados.taxa_juros}%</p>
+            ${dados.taxa || dados.taxa_juros}%</p>
           `
         } else {
           document.getElementById('resultadoEmprestimo')

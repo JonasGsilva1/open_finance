@@ -426,7 +426,10 @@ app.get('/open-finance/:id', async (req, res) => {
     const usuario = usuarios.find(u => u.id === id)
     const conta = contas.find(c => c.usuario_id === id)
     const perfilFinanceiro = perfil.find(p => p.usuario_id === id)
-    const historicoEmprestimos = emprestimos.filter(e => e.usuario_id === id)
+    const historicoEmprestimos = emprestimos.filter(e => e.usuario_id === id).map(e => ({
+      ...e,
+      taxa: e.taxa_juros || e.taxa // Alias para garantir compatibilidade
+    }))
 
     res.json({
       nome: usuario.nome,

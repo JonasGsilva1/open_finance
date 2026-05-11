@@ -259,8 +259,50 @@ app.get('/perfil/:id', async (req, res) => {
 })
 
 // ─────────────────────────────────────────────
-// SOLICITAR EMPRÉSTIMO
+// SOLICITAR EMPRÉSTIMO (COM FILA E OPEN FINANCE)
 // ─────────────────────────────────────────────
+
+const filaEmprestimos = [];
+const statusEmprestimos = new Map();
+let idPedidoCounter = 1;
+let processandoFila = false;
+
+async function processarFila() {
+  if (processandoFila || filaEmprestimos.length === 0) return;
+  processandoFila = true;
+
+  while (filaEmprestimos.length > 0) {
+    const pedido = filaEmprestimos.shift();
+    
+    statusEmprestimos.set(pedido.id_pedido, { status: 'em_analise' });
+
+    try {
+      // Simula o tempo de análise do Open Finance (3 segundos)
+      await new Promise(r => setTimeout(r, 3000));
+
+      const resposta = await axios.post(
+        GOOGLE_SCRIPT_URL,
+        {
+          acao: 'emprestimo',
+          usuario_id: Number(pedido.usuario_id),
+          valor_solicitado: Number(pedido.valor_solicitado)
+        }
+      );
+
+      statusEmprestimos.set(pedido.id_pedido, { 
+        status: 'concluido', 
+        resultado: resposta.data 
+      });
+    } catch (e) {
+      statusEmprestimos.set(pedido.id_pedido, { 
+        status: 'erro', 
+        erro: e.message 
+      });
+    }
+  }
+
+  processandoFila = false;
+}
 
 app.post('/solicitar-emprestimo', async (req, res) => {
 
@@ -268,21 +310,41 @@ app.post('/solicitar-emprestimo', async (req, res) => {
 
     const { usuario_id, valor_solicitado } = req.body
 
-    const resposta = await axios.post(
-      GOOGLE_SCRIPT_URL,
-      {
-        acao: 'emprestimo',
-        usuario_id: Number(usuario_id),
-        valor_solicitado: Number(valor_solicitado)
-      }
-    )
+    const id_pedido = idPedidoCounter++;
 
-    res.json(resposta.data)
+    statusEmprestimos.set(id_pedido, { status: 'na_fila', posicao: filaEmprestimos.length + 1 });
+
+    filaEmprestimos.push({
+      id_pedido,
+      usuario_id,
+      valor_solicitado
+    });
+
+    processarFila(); // processa em background sem travar a requisição
+
+    res.json({ id_pedido, status: 'na_fila' })
 
   } catch (e) {
     res.status(500).json({ erro: e.message })
   }
 
+})
+
+app.get('/status-emprestimo/:id_pedido', (req, res) => {
+  const id_pedido = Number(req.params.id_pedido);
+  
+  if (!statusEmprestimos.has(id_pedido)) {
+    return res.status(404).json({ erro: 'Pedido não encontrado' });
+  }
+
+  const info = statusEmprestimos.get(id_pedido);
+
+  if (info.status === 'na_fila') {
+    const posicao = filaEmprestimos.findIndex(p => p.id_pedido === id_pedido) + 1;
+    return res.json({ ...info, posicao });
+  }
+
+  res.json(info);
 })
 
 // ─────────────────────────────────────────────

@@ -307,37 +307,65 @@
     const dados =
       await resposta.json()
 
-    if (dados.status === 'aprovado') {
-
-      document.getElementById('resultadoEmprestimo')
-        .innerHTML = `
-
-        <h3 style="color:green;">
-          ✅ Aprovado
-        </h3>
-
-        <p><strong>Score:</strong>
-        ${dados.score}</p>
-
-        <p><strong>Taxa:</strong>
-        ${dados.taxa_juros}%</p>
-
-      `
-
+    if (dados.id_pedido) {
+      document.getElementById('resultadoEmprestimo').innerHTML = `
+        <p style="color:orange;" id="statusPedidoText">⏳ Entrando na fila de análise...</p>
+      `;
+      acompanharPedido(dados.id_pedido);
     } else {
-
-      document.getElementById('resultadoEmprestimo')
-        .innerHTML = `
-
-        <h3 style="color:red;">
-          ❌ Rejeitado
-        </h3>
-
-        <p>${dados.motivo}</p>
-
-      `
+      document.getElementById('resultadoEmprestimo').innerHTML = `
+        <p style="color:red;">❌ Erro ao solicitar empréstimo: ${dados.erro}</p>
+      `;
     }
 
+  }
+
+  async function acompanharPedido(id_pedido) {
+    const inter = setInterval(async () => {
+      const res = await fetch(`/status-emprestimo/${id_pedido}`);
+      const info = await res.json();
+
+      const el = document.getElementById('statusPedidoText');
+      
+      if (info.status === 'na_fila') {
+        if (el) el.innerHTML = `⏳ Você está na posição ${info.posicao} da fila. Aguarde...`;
+      } else if (info.status === 'em_analise') {
+        if (el) el.innerHTML = `🔍 Analisando consulta do Open Finance...`;
+      } else if (info.status === 'concluido') {
+        clearInterval(inter);
+        
+        const dados = info.resultado;
+        if (dados.status === 'aprovado') {
+          document.getElementById('resultadoEmprestimo')
+            .innerHTML = `
+            <h3 style="color:green;">
+              ✅ Aprovado
+            </h3>
+            <p><strong>Score:</strong>
+            ${dados.score}</p>
+            <p><strong>Taxa:</strong>
+            ${dados.taxa_juros}%</p>
+          `
+        } else {
+          document.getElementById('resultadoEmprestimo')
+            .innerHTML = `
+            <h3 style="color:red;">
+              ❌ Rejeitado
+            </h3>
+            <p>${dados.motivo}</p>
+          `
+        }
+      } else if (info.status === 'erro') {
+        clearInterval(inter);
+        document.getElementById('resultadoEmprestimo')
+          .innerHTML = `
+          <h3 style="color:red;">
+            ❌ Erro no processamento
+          </h3>
+          <p>${info.erro}</p>
+        `
+      }
+    }, 2000);
   }
 
 // OPEN FINANCE

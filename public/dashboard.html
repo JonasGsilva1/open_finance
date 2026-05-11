@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>Banco Digital</title>
+
+  <style>
+
+    body {
+      font-family: Arial;
+      background: #f3f4f6;
+      padding: 30px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+
+    .card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,.08);
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      border: 1px solid #d1d5db;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      background: #4f46e5;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #4338ca;
+    }
+
+    .logout {
+      background: red;
+      margin-bottom: 20px;
+    }
+
+    .resultado {
+      margin-top: 15px;
+      background: #f9fafb;
+      padding: 15px;
+      border-radius: 8px;
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+  <button
+    class="logout"
+    onclick="logout()"
+  >
+    Sair
+  </button>
+
+  <div class="card">
+
+    <h2 id="bemvindo"></h2>
+
+    <div id="dadosUsuario"></div>
+
+  </div>
+
+  <!-- SALDO -->
+
+  <div class="card">
+
+    <h2>💰 Ver Saldo</h2>
+
+    <button onclick="verSaldo()">
+      Consultar Saldo
+    </button>
+
+    <div id="resultadoSaldo" class="resultado"></div>
+
+  </div>
+
+  <!-- PERFIL -->
+
+  <div class="card">
+
+    <h2>📊 Perfil Financeiro</h2>
+
+    <button onclick="verPerfil()">
+      Ver Perfil
+    </button>
+
+    <div id="resultadoPerfil" class="resultado"></div>
+
+  </div>
+
+  <!-- EMPRESTIMO -->
+
+  <div class="card">
+
+    <h2>💳 Solicitar Empréstimo</h2>
+
+    <input
+      type="number"
+      id="valorEmprestimo"
+      placeholder="Valor solicitado"
+    />
+
+    <button onclick="solicitarEmprestimo()">
+      Solicitar
+    </button>
+
+    <div id="resultadoEmprestimo" class="resultado"></div>
+
+  </div>
+
+  <!-- OPEN FINANCE -->
+
+<div class="card">
+
+  <h2>🔓 Open Finance</h2>
+
+  <p>
+    Compartilhe seus dados com outras instituições financeiras.
+  </p>
+
+  <div
+    style="
+      background:#f3f4f6;
+      padding:15px;
+      border-radius:8px;
+      margin-top:15px;
+      margin-bottom:15px;
+      font-size:14px;
+      line-height:1.6;
+    "
+  >
+
+    <strong>Termos de Compartilhamento</strong>
+
+    <br><br>
+
+    Ao aceitar, você autoriza o compartilhamento de:
+
+    <ul>
+
+      <li>Saldo bancário</li>
+
+      <li>Histórico financeiro</li>
+
+      <li>Score de crédito</li>
+
+      <li>Informações de empréstimos</li>
+
+      <li>Dados financeiros gerais</li>
+
+    </ul>
+
+  </div>
+
+  <button onclick="autorizarOpenFinance()">
+    ✅ Autorizar Compartilhamento
+  </button>
+
+  <div
+    id="resultadoOpenFinance"
+    class="resultado"
+  ></div>
+
+</div>
+
+</div>
+
+<script>
+
+  const usuario =
+    JSON.parse(localStorage.getItem('usuario'))
+
+  if (!usuario) {
+    window.location.href = '/'
+  }
+
+  document.getElementById('bemvindo')
+    .innerHTML =
+      `Olá, ${usuario.nome}`
+
+  document.getElementById('dadosUsuario')
+    .innerHTML = `
+
+      <p><strong>ID:</strong>
+      ${usuario.id}</p>
+
+      <p><strong>Email:</strong>
+      ${usuario.email}</p>
+
+    `
+
+  // LOGOUT
+
+  function logout() {
+
+    localStorage.removeItem('usuario')
+
+    window.location.href = '/'
+
+  }
+
+  // SALDO
+
+  async function verSaldo() {
+
+    const resposta =
+      await fetch(`/saldo/${usuario.id}`)
+
+    const dados =
+      await resposta.json()
+
+    document.getElementById('resultadoSaldo')
+      .innerHTML = `
+
+      <p><strong>Saldo:</strong>
+      R$ ${dados.saldo}</p>
+
+      <p><strong>Conta:</strong>
+      ${dados.numero_conta}</p>
+
+    `
+  }
+
+  // PERFIL
+
+  async function verPerfil() {
+
+    const resposta =
+      await fetch(`/perfil/${usuario.id}`)
+
+    const dados =
+      await resposta.json()
+
+    document.getElementById('resultadoPerfil')
+      .innerHTML = `
+
+      <p><strong>Renda:</strong>
+      R$ ${dados.renda_mensal}</p>
+
+      <p><strong>Despesas:</strong>
+      R$ ${dados.despesas_mensais}</p>
+
+      <p><strong>Score:</strong>
+      ${dados.score}</p>
+
+    `
+  }
+
+  // EMPRESTIMO
+
+  async function solicitarEmprestimo() {
+
+    const valor_solicitado =
+      Number(
+        document.getElementById('valorEmprestimo').value
+      )
+
+    const resposta =
+      await fetch(
+        '/solicitar-emprestimo',
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type': 'application/json'
+          },
+
+          body: JSON.stringify({
+            usuario_id: usuario.id,
+            valor_solicitado
+          })
+        }
+      )
+
+    const dados =
+      await resposta.json()
+
+    if (dados.status === 'aprovado') {
+
+      document.getElementById('resultadoEmprestimo')
+        .innerHTML = `
+
+        <h3 style="color:green;">
+          ✅ Aprovado
+        </h3>
+
+        <p><strong>Score:</strong>
+        ${dados.score}</p>
+
+        <p><strong>Taxa:</strong>
+        ${dados.taxa_juros}%</p>
+
+      `
+
+    } else {
+
+      document.getElementById('resultadoEmprestimo')
+        .innerHTML = `
+
+        <h3 style="color:red;">
+          ❌ Rejeitado
+        </h3>
+
+        <p>${dados.motivo}</p>
+
+      `
+    }
+
+  }
+
+// OPEN FINANCE
+
+async function autorizarOpenFinance() {
+
+  const resposta =
+    await fetch(
+      '/consentimento/autorizar',
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type': 'application/json'
+        },
+
+        body: JSON.stringify({
+          usuario_id: usuario.id
+        })
+      }
+    )
+
+  const dados =
+    await resposta.json()
+
+  // ERRO
+
+  if (dados.erro) {
+
+    document.getElementById('resultadoOpenFinance')
+      .innerHTML = `
+
+      <p style="color:red;">
+        ${dados.erro}
+      </p>
+
+    `
+
+    return
+
+  }
+
+  // SUCESSO
+
+  document.getElementById('resultadoOpenFinance')
+    .innerHTML = `
+
+    <h3 style="color:green;">
+      ✅ Compartilhamento autorizado
+    </h3>
+
+    <p>
+      Seus dados agora podem ser compartilhados
+      via Open Finance.
+    </p>
+
+  `
+}
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+
+  <meta charset="UTF-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  />
+
+  <title>Login - Banco Digital</title>
+
+  <style>
+
+    body {
+      font-family: Arial;
+      background: #4f46e5;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .box {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      width: 350px;
+      box-shadow: 0 5px 20px rgba(0,0,0,.2);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    input {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      background: #4f46e5;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    button:hover {
+      background: #4338ca;
+    }
+
+    .link {
+      margin-top: 15px;
+      text-align: center;
+      cursor: pointer;
+      color: #4f46e5;
+      font-weight: bold;
+    }
+
+    #resultado {
+      margin-top: 15px;
+      color: red;
+      text-align: center;
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+<div class="box">
+
+  <h1>🏦 Banco Digital</h1>
+
+  <input
+    type="email"
+    id="email"
+    placeholder="Email"
+  />
+
+  <input
+    type="password"
+    id="senha"
+    placeholder="Senha"
+  />
+
+  <button onclick="login()">
+    Entrar
+  </button>
+
+  <div
+    class="link"
+    onclick="window.location.href='cadastro.html'"
+  >
+    Criar Conta
+  </div>
+
+  <div id="resultado"></div>
+
+</div>
+
+<script>
+
+  async function login() {
+
+    const email =
+      document.getElementById('email').value
+
+    const senha =
+      document.getElementById('senha').value
+
+    const resposta =
+      await fetch(
+        '/login',
+        {
+          method: 'POST',
+
+          headers: {
+            'Content-Type': 'application/json'
+          },
+
+          body: JSON.stringify({
+            email,
+            senha
+          })
+        }
+      )
+
+    const dados =
+      await resposta.json()
+
+    if (dados.erro) {
+
+      document.getElementById('resultado')
+        .innerHTML = dados.erro
+
+      return
+    }
+
+    // SALVA SESSÃO
+    localStorage.setItem(
+      'usuario',
+      JSON.stringify(dados)
+    )
+
+    // REDIRECIONA
+    window.location.href = 'dashboard.html'
+  }
+
+</script>
+
+</body>
+</html>
